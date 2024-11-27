@@ -4,6 +4,35 @@ import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Code, Layout, Smartphone, Database, MessagesSquare, ChevronRight, Blocks, PencilRuler, Globe, ChevronDown } from 'lucide-react'
 
+interface TypewriterEffectProps {
+    text: string
+    className?: string
+    delay?: number
+}
+
+const TypewriterEffect = ({ text, className = '', delay = 50 }: TypewriterEffectProps) => {
+    const [displayedText, setDisplayedText] = useState('')
+    const [currentIndex, setCurrentIndex] = useState(0)
+
+    useEffect(() => {
+        if (currentIndex < text.length) {
+            const timeout = setTimeout(() => {
+                setDisplayedText(prev => prev + text[currentIndex])
+                setCurrentIndex(prev => prev + 1)
+            }, delay)
+
+            return () => clearTimeout(timeout)
+        }
+    }, [currentIndex, delay, text])
+
+    return (
+        <p className={className}>
+            {displayedText}
+            <span className="animate-pulse">|</span>
+        </p>
+    )
+}
+
 const ThreeBackground = dynamic(() => import('../three/ThreeBackground'), {
     ssr: false,
     loading: () => <div className="absolute inset-0 bg-black" />
@@ -45,13 +74,24 @@ const services = [
 export default function Hero() {
     const [mounted, setMounted] = useState(false)
     const [showAll, setShowAll] = useState(false)
+    const [startTyping, setStartTyping] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
 
     useEffect(() => {
         setMounted(true)
+        const timer = setTimeout(() => setStartTyping(true), 1000)
+
+        const checkMobile = () => setIsMobile(window.innerWidth <= 768)
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+
+        return () => {
+            clearTimeout(timer)
+            window.removeEventListener('resize', checkMobile)
+        }
     }, [])
 
-    // Show only 4 services on mobile, all on larger screens
-    const visibleServices = !showAll && window.innerWidth <= 768 ? services.slice(0, 3) : services
+    const visibleServices = !showAll && isMobile ? services.slice(0, 3) : services
 
     return (
         <section className="min-h-[100dvh] relative overflow-hidden bg-black">
@@ -86,10 +126,15 @@ export default function Hero() {
                             <span className="text-white mt-2 sm:mt-0 inline-block">Layanan IT</span>
                         </h1>
 
-                        <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-xl sm:max-w-2xl mx-auto px-4">
-                            Jasa pengembangan aplikasi profesional & konsultasi IT untuk
-                            kebutuhan bisnis dan akademik Anda
-                        </p>
+                        {startTyping ? (
+                            <TypewriterEffect
+                                text="Jasa pengembangan aplikasi profesional & konsultasi IT untuk kebutuhan bisnis dan akademik Anda"
+                                className="text-base sm:text-lg md:text-xl text-gray-300 max-w-xl sm:max-w-2xl mx-auto px-4"
+                                delay={30}
+                            />
+                        ) : (
+                            <div className="h-[1.5em] sm:h-[1.75em] md:h-[2em]" />
+                        )}
                     </div>
 
                     {/* CTA Buttons */}
@@ -170,7 +215,7 @@ export default function Hero() {
                         </div>
 
                         {/* Show More Button - Only visible on mobile when not all services are shown */}
-                        {!showAll && window.innerWidth <= 768 && (
+                        {!showAll && isMobile && (
                             <button
                                 onClick={() => setShowAll(true)}
                                 className="flex items-center justify-center gap-2 mx-auto px-4 py-2 
