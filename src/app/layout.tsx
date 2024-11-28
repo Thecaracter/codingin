@@ -1,6 +1,7 @@
 import "./globals.css"
 import { Inter } from "next/font/google"
 import { Analytics } from '@vercel/analytics/react'
+import BackgroundWrapper from './components/BackgroundWrapper'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -17,7 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
-        {children}
+        <BackgroundWrapper>
+          {children}
+        </BackgroundWrapper>
         <Analytics />
       </body>
     </html>

@@ -1,3 +1,5 @@
+'use client';
+
 export default function Process() {
     const steps = [
         {
@@ -20,27 +22,31 @@ export default function Process() {
             description: 'Pengujian akhir dan serah terima proyek yang lancar.',
             icon: '🚀'
         }
-    ]
+    ];
 
     return (
-        <section className="py-16 px-4">
-            <div className="max-w-4xl mx-auto">
+        <section id="process-section" className="min-h-screen py-16 px-4 relative overflow-hidden">
+            <div className="max-w-4xl mx-auto relative z-10">
                 <div className="text-center mb-12">
-                    <h2 className="text-3xl font-bold mb-3">Cara Kami Bekerja</h2>
+                    <h2 className="text-3xl font-bold mb-3 text-white">Cara Kami Bekerja</h2>
                     <p className="text-gray-400">Proses pengembangan yang telah teruji</p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {steps.map((step, index) => (
-                        <div key={step.title} 
-                             className="h-[180px] p-6 rounded-lg bg-gray-800/50 backdrop-blur-sm 
-                                      hover:bg-gray-800/70 transition-all duration-300 
-                                      border border-gray-700/50 hover:border-blue-500/50
-                                      relative group">
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 
-                                          to-purple-500/5 opacity-0 group-hover:opacity-100 
-                                          transition-opacity duration-300" />
-                            
+                        <div
+                            key={step.title}
+                            className="h-[180px] p-6 rounded-xl bg-gray-800/50 backdrop-blur-sm
+                                    hover:bg-gray-800/70 transition-all duration-300
+                                    border border-gray-700/50 hover:border-blue-500/50
+                                    relative group"
+                        >
+                            <div
+                                className="absolute inset-0 bg-gradient-to-br from-blue-500/5
+                                        to-purple-500/5 opacity-0 group-hover:opacity-100
+                                        transition-opacity duration-300 rounded-xl"
+                            />
+
                             <div className="relative z-10 h-full flex flex-col">
                                 <div className="flex items-center justify-between mb-3">
                                     <span className="text-2xl font-bold text-blue-500">
@@ -61,5 +67,5 @@ export default function Process() {
                 </div>
             </div>
         </section>
-    )
+    );
 }
