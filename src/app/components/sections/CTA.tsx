@@ -21,7 +21,7 @@ export default function CTA() {
                             Ready to Start Your Project?
                         </h2>
                         <p className="text-gray-400 mb-6">
-                            Let's build something amazing together
+                            Let&apos;s build something amazing together
                         </p>
                         <Button className="mx-auto">Contact Us</Button>
                     </div>
