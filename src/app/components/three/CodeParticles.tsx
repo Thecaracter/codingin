@@ -93,17 +93,36 @@ function Trail() {
 function UFO() {
     const ufoRef = useRef<THREE.Group>(null!);
     const [position] = useState(() => ({
-        x: Math.random() * 20 - 10,
-        y: Math.random() * 10 - 5,
-        z: 2
+        x: Math.random() * 30 - 15, // Wider range for initial X position
+        y: Math.random() * 20 - 10, // Wider range for initial Y position
+        z: Math.random() * 5 + 5   // Keep UFOs away from the moon
     }));
 
     useFrame((state) => {
         if (ufoRef.current) {
             const time = state.clock.getElapsedTime();
-            // Wider figure-8 pattern
-            ufoRef.current.position.x = position.x + Math.sin(time * 0.5) * 8;
-            ufoRef.current.position.y = position.y + Math.sin(time * 1) * 3;
+
+            // Modified figure-8 pattern with moon avoidance
+            const baseX = position.x + Math.sin(time * 0.5) * 8;
+            const baseY = position.y + Math.sin(time * 1) * 3;
+
+            // Check distance from moon (moon is at [2, 2, -3])
+            const moonDist = Math.sqrt(
+                Math.pow(baseX - 2, 2) +
+                Math.pow(baseY - 2, 2) +
+                Math.pow(position.z + 3, 2)
+            );
+
+            // If too close to moon, adjust position
+            if (moonDist < 10) {
+                ufoRef.current.position.x = baseX + (10 - moonDist);
+                ufoRef.current.position.y = baseY + (10 - moonDist);
+            } else {
+                ufoRef.current.position.x = baseX;
+                ufoRef.current.position.y = baseY;
+            }
+
+            ufoRef.current.position.z = position.z;
             ufoRef.current.rotation.z = Math.sin(time * 0.3) * 0.2;
         }
     });
@@ -140,14 +159,14 @@ function UFO() {
 
 function Stars() {
     const points = useRef<THREE.Points>(null!);
-    const starsCount = 3000; // Tambah jumlah bintang
+    const starsCount = 3000;
 
     const [starColors] = useState(() => {
         const colors = new Float32Array(starsCount * 3);
         for (let i = 0; i < starsCount; i++) {
             const r = 0.9 + Math.random() * 0.1;
             const g = 0.9 + Math.random() * 0.1;
-            const b = 1; // Buat bintang lebih putih/biru
+            const b = 1;
             colors[i * 3] = r;
             colors[i * 3 + 1] = g;
             colors[i * 3 + 2] = b;
@@ -155,11 +174,10 @@ function Stars() {
         return colors;
     });
 
-
     const positions = useMemo(() => {
         const pos = new Float32Array(starsCount * 3);
         for (let i = 0; i < starsCount; i++) {
-            const radius = Math.random() * 30 + 10;
+            const radius = Math.random() * 50 + 20; // Increased radius
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.random() * Math.PI;
 
@@ -180,10 +198,16 @@ function Stars() {
             <PointMaterial
                 transparent
                 vertexColors
-                size={0.3}
+                size={0.5} // Increased size
                 sizeAttenuation={true}
                 depthWrite={false}
                 blending={THREE.AdditiveBlending}
+            />
+            <bufferAttribute
+                attach="geometry-attributes-color"
+                count={starsCount}
+                array={starColors}
+                itemSize={3}
             />
         </Points>
     );
@@ -388,20 +412,18 @@ export default function CodeAnimation() {
 
     return (
         <div className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
-            <Canvas camera={{ position: [0, 0, 15], fov: 45 }}>
+            <Canvas camera={{ position: [0, 0, 15], fov: 60 }}> {/* Increased FOV */}
                 <color attach="background" args={['#000000']} />
-                <fog attach="fog" args={['#000000', 1, 50]} />
-                <ambientLight intensity={0.3} /> {/* Sedikit tingkatkan ambient light */}
-                <pointLight position={[10, 10, 10]} intensity={0.6} />
-                <pointLight position={[-10, -10, -5]} intensity={0.3} color="#4a6ea5" />
+                <fog attach="fog" args={['#000000', 1, 70]} /> {/* Increased fog distance */}
+                <ambientLight intensity={0.4} />
+                <pointLight position={[10, 10, 10]} intensity={0.8} />
+                <pointLight position={[-10, -10, -5]} intensity={0.4} color="#4a6ea5" />
                 <Stars />
                 <Moon scrollProgress={scrollProgress} />
                 <CodeParticles scrollProgress={scrollProgress} />
-                {/* Kurangi jumlah bintang jatuh untuk efek yang lebih baik */}
-                {Array.from({ length: 1 }).map((_, i) => (
+                {Array.from({ length: 2 }).map((_, i) => (
                     <ShootingStar key={i} />
                 ))}
-                {/* Kurangi jumlah UFO */}
                 {Array.from({ length: 2 }).map((_, i) => (
                     <UFO key={i} />
                 ))}
