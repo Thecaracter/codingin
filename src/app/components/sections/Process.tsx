@@ -37,13 +37,11 @@ export default function Process() {
                                       hover:bg-gray-800/70 transition-all duration-300 
                                       border border-gray-700/50 hover:border-blue-500/50
                                       relative group">
-                            {/* Lapisan gradien */}
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 
                                           to-purple-500/5 opacity-0 group-hover:opacity-100 
                                           transition-opacity duration-300" />
                             
                             <div className="relative z-10 h-full flex flex-col">
-                    
                                 <div className="flex items-center justify-between mb-3">
                                     <span className="text-2xl font-bold text-blue-500">
                                         {String(index + 1).padStart(2, '0')}
