@@ -23,6 +23,16 @@ model Pesanan {
   updatedAt      DateTime @updatedAt
 }
 
+model Portofolio {
+  id        Int      @id @default(autoincrement())
+  nama      String
+  deskripsi String
+  techStack String[]
+  link      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum Status {
   PENDING
   PROSES

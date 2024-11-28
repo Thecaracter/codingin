@@ -1,34 +1,62 @@
 export default function Process() {
     const steps = [
         {
-            title: 'Discussion',
-            description: 'We discuss your requirements and project scope'
+            title: 'Diskusi',
+            description: 'Konsultasi awal untuk memahami visi dan kebutuhan Anda.',
+            icon: '💡'
         },
         {
-            title: 'Planning',
-            description: 'Create detailed project plan and timeline'
+            title: 'Perencanaan',
+            description: 'Membuat peta proyek dan strategi pengembangan secara detail.',
+            icon: '📋'
         },
         {
-            title: 'Development',
-            description: 'Build your project with regular updates'
+            title: 'Pengembangan',
+            description: 'Membangun proyek Anda dengan update progres yang konsisten.',
+            icon: '⚡'
         },
         {
-            title: 'Delivery',
-            description: 'Final testing and project handover'
+            title: 'Pengiriman',
+            description: 'Pengujian akhir dan serah terima proyek yang lancar.',
+            icon: '🚀'
         }
     ]
 
     return (
-        <section className="py-20 px-4">
-            <div className="max-w-6xl mx-auto">
-                <h2 className="text-3xl font-bold text-center mb-12">How We Work</h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <section className="py-16 px-4">
+            <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-12">
+                    <h2 className="text-3xl font-bold mb-3">Cara Kami Bekerja</h2>
+                    <p className="text-gray-400">Proses pengembangan yang telah teruji</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {steps.map((step, index) => (
-                        <div key={step.title} className="relative">
-                            <div className="p-6 rounded-lg bg-gray-800">
-                                <div className="text-2xl font-bold text-blue-500 mb-4">0{index + 1}</div>
-                                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                                <p className="text-gray-400">{step.description}</p>
+                        <div key={step.title} 
+                             className="h-[180px] p-6 rounded-lg bg-gray-800/50 backdrop-blur-sm 
+                                      hover:bg-gray-800/70 transition-all duration-300 
+                                      border border-gray-700/50 hover:border-blue-500/50
+                                      relative group">
+                            {/* Lapisan gradien */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 
+                                          to-purple-500/5 opacity-0 group-hover:opacity-100 
+                                          transition-opacity duration-300" />
+                            
+                            <div className="relative z-10 h-full flex flex-col">
+                    
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-2xl font-bold text-blue-500">
+                                        {String(index + 1).padStart(2, '0')}
+                                    </span>
+                                    <span className="text-xl">{step.icon}</span>
+                                </div>
+
+                                <h3 className="text-lg font-semibold mb-2 text-white/90">
+                                    {step.title}
+                                </h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    {step.description}
+                                </p>
                             </div>
                         </div>
                     ))}
