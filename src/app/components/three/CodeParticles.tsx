@@ -1,6 +1,3 @@
-// src/three/CodeParticles.tsx
-'use client';
-
 import { useRef, useMemo, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Points, PointMaterial, useTexture } from '@react-three/drei';
@@ -9,63 +6,86 @@ import { useSpring, animated } from '@react-spring/three';
 
 function ShootingStar() {
     const starRef = useRef<THREE.Mesh>(null!);
-    const speed = Math.random() * 0.5 + 0.5;
-    const distance = Math.random() * 20 + 10;
+    const speed = Math.random() * 2 + 1;
+    const distance = Math.random() * 30 + 20;
+    const trailLength = Math.random() * 10 + 5;
+
     const initialPosition = useMemo(() => ({
-        x: Math.random() * 40 - 20,
-        y: Math.random() * 20 + 10,
-        z: 0
+        x: Math.random() * 60 - 30,
+        y: Math.random() * 40 + 20,
+        z: Math.random() * 10 - 5
     }), []);
 
     useFrame((state) => {
         if (starRef.current) {
             const time = state.clock.getElapsedTime();
-            starRef.current.position.x = initialPosition.x - (time * speed) % distance;
-            starRef.current.position.y = initialPosition.y - ((time * speed) % distance) * 0.5;
+            const angle = Math.PI / 4;
 
-            // Reset position when star goes too far
-            if (starRef.current.position.x < -20) {
-                starRef.current.position.x = 20;
-                starRef.current.position.y = Math.random() * 20 + 10;
+            starRef.current.position.x = initialPosition.x - (time * speed * Math.cos(angle)) % distance;
+            starRef.current.position.y = initialPosition.y - (time * speed * Math.sin(angle)) % distance;
+            starRef.current.position.z = initialPosition.z + Math.sin(time * 2) * 0.5;
+
+            if (starRef.current.position.x < -30 || starRef.current.position.y < -20) {
+                starRef.current.position.x = Math.random() * 30 + 30;
+                starRef.current.position.y = Math.random() * 40 + 20;
+                starRef.current.position.z = Math.random() * 10 - 5;
             }
         }
     });
 
     return (
-        <mesh ref={starRef} position={[initialPosition.x, initialPosition.y, initialPosition.z]}>
-            <sphereGeometry args={[0.1, 8, 8]} />
-            <meshBasicMaterial color="#ffffff" />
-            <Trail />
-        </mesh>
+        <group>
+            <mesh ref={starRef} position={[initialPosition.x, initialPosition.y, initialPosition.z]}>
+                <sphereGeometry args={[0.2, 16, 16]} />
+                <meshBasicMaterial color="#ffffff" />
+                <Trail length={trailLength} />
+            </mesh>
+            <pointLight
+                position={[initialPosition.x, initialPosition.y, initialPosition.z]}
+                intensity={0.5}
+                distance={5}
+                color="#ffffff"
+            />
+        </group>
     );
 }
 
-function Trail() {
+function Trail({ length }: { length: number }) {
     const trailRef = useRef<THREE.Points>(null!);
-    const trailCount = 20;
+    const trailCount = 30;
     const positions = new Float32Array(trailCount * 3);
+    const colors = new Float32Array(trailCount * 3);
 
     useFrame(() => {
         if (trailRef.current && trailRef.current.parent) {
             const parentPos = trailRef.current.parent.position;
 
-            // Shift existing positions
             for (let i = trailCount - 1; i > 0; i--) {
                 positions[i * 3] = positions[(i - 1) * 3];
                 positions[i * 3 + 1] = positions[(i - 1) * 3 + 1];
                 positions[i * 3 + 2] = positions[(i - 1) * 3 + 2];
+
+                const alpha = 1 - (i / trailCount);
+                colors[i * 3] = alpha;
+                colors[i * 3 + 1] = alpha;
+                colors[i * 3 + 2] = alpha;
             }
 
-            // Add new position
             positions[0] = parentPos.x;
             positions[1] = parentPos.y;
             positions[2] = parentPos.z;
+            colors[0] = 1;
+            colors[1] = 1;
+            colors[2] = 1;
 
             trailRef.current.geometry.setAttribute(
                 'position',
                 new THREE.Float32BufferAttribute(positions, 3)
             );
-            trailRef.current.geometry.attributes.position.needsUpdate = true;
+            trailRef.current.geometry.setAttribute(
+                'color',
+                new THREE.Float32BufferAttribute(colors, 3)
+            );
         }
     });
 
@@ -78,12 +98,18 @@ function Trail() {
                     array={positions}
                     itemSize={3}
                 />
+                <bufferAttribute
+                    attach="attributes-color"
+                    count={trailCount}
+                    array={colors}
+                    itemSize={3}
+                />
             </bufferGeometry>
             <pointsMaterial
-                size={0.05}
-                color="#ffffff"
+                size={0.1}
+                vertexColors
                 transparent
-                opacity={0.5}
+                opacity={0.6}
                 blending={THREE.AdditiveBlending}
             />
         </points>
@@ -92,54 +118,72 @@ function Trail() {
 
 function UFO() {
     const ufoRef = useRef<THREE.Group>(null!);
+    const [hover, setHover] = useState(false);
+    const baseSpeed = Math.random() * 0.3 + 0.2;
     const [position] = useState(() => ({
-        x: Math.random() * 30 - 15, // Wider range for initial X position
-        y: Math.random() * 20 - 10, // Wider range for initial Y position
-        z: Math.random() * 5 + 5   // Keep UFOs away from the moon
+        x: Math.random() * 40 - 20,
+        y: Math.random() * 30 - 15,
+        z: Math.random() * 10
     }));
+
+    const { scale, rotationIntensity } = useSpring({
+        scale: hover ? 1.2 : 1,
+        rotationIntensity: hover ? 2 : 1,
+        config: { mass: 1, tension: 280, friction: 60 }
+    });
 
     useFrame((state) => {
         if (ufoRef.current) {
             const time = state.clock.getElapsedTime();
 
-            // Modified figure-8 pattern with moon avoidance
-            const baseX = position.x + Math.sin(time * 0.5) * 8;
-            const baseY = position.y + Math.sin(time * 1) * 3;
+            const x = position.x + Math.sin(time * baseSpeed) * 10 + Math.cos(time * baseSpeed * 0.5) * 5;
+            const y = position.y + Math.cos(time * baseSpeed) * 8 + Math.sin(time * baseSpeed * 0.7) * 4;
+            const z = position.z + Math.sin(time * baseSpeed * 0.3) * 3;
 
-            // Check distance from moon (moon is at [2, 2, -3])
-            const moonDist = Math.sqrt(
-                Math.pow(baseX - 2, 2) +
-                Math.pow(baseY - 2, 2) +
-                Math.pow(position.z + 3, 2)
+            ufoRef.current.position.set(x, y, z);
+
+            const rotationSpeed = hover ? 0.05 : 0.02;
+            ufoRef.current.rotation.y += rotationSpeed;
+            ufoRef.current.rotation.z = Math.sin(time * baseSpeed) * 0.2;
+
+            const lights = ufoRef.current.children.filter(
+                (child): child is THREE.PointLight => child.type === 'PointLight'
             );
-
-            // If too close to moon, adjust position
-            if (moonDist < 10) {
-                ufoRef.current.position.x = baseX + (10 - moonDist);
-                ufoRef.current.position.y = baseY + (10 - moonDist);
-            } else {
-                ufoRef.current.position.x = baseX;
-                ufoRef.current.position.y = baseY;
-            }
-
-            ufoRef.current.position.z = position.z;
-            ufoRef.current.rotation.z = Math.sin(time * 0.3) * 0.2;
         }
     });
 
     return (
-        <group ref={ufoRef} position={[position.x, position.y, position.z]} scale={[1, 1, 1]}>
-            {/* UFO Body */}
+        <animated.group
+            ref={ufoRef}
+            scale={scale}
+            onPointerOver={() => setHover(true)}
+            onPointerOut={() => setHover(false)}
+            position={[position.x, position.y, position.z]}
+        >
             <mesh>
                 <cylinderGeometry args={[1.5, 1.5, 0.3, 32]} />
-                <meshStandardMaterial color="#8a8a8a" metalness={0.8} roughness={0.2} />
+                <meshStandardMaterial
+                    color="#8a8a8a"
+                    metalness={0.9}
+                    roughness={0.1}
+                    emissive="#4a6ea5"
+                    emissiveIntensity={hover ? 0.5 : 0.2}
+                />
             </mesh>
-            {/* UFO Dome */}
+
             <mesh position={[0, 0.3, 0]}>
                 <sphereGeometry args={[0.8, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
-                <meshStandardMaterial color="#87CEEB" transparent opacity={0.9} />
+                <meshPhysicalMaterial
+                    color="#87CEEB"
+                    transparent
+                    opacity={0.9}
+                    metalness={0.5}
+                    roughness={0.1}
+                    transmission={0.5}
+                    thickness={0.5}
+                />
             </mesh>
-            {/* UFO Lights */}
+
             {[0, 72, 144, 216, 288].map((angle, i) => (
                 <pointLight
                     key={i}
@@ -148,12 +192,19 @@ function UFO() {
                         -0.1,
                         Math.sin((angle * Math.PI) / 180) * 1.2
                     ]}
-                    intensity={0.3}
-                    color="#ffff00"
-                    distance={2}
+                    intensity={hover ? 0.8 : 0.3}
+                    color={hover ? "#00ff00" : "#ffff00"}
+                    distance={3}
                 />
             ))}
-        </group>
+
+            <pointLight
+                position={[0, -0.2, 0]}
+                intensity={hover ? 1 : 0.5}
+                color="#4a6ea5"
+                distance={2}
+            />
+        </animated.group>
     );
 }
 
@@ -177,7 +228,7 @@ function Stars() {
     const positions = useMemo(() => {
         const pos = new Float32Array(starsCount * 3);
         for (let i = 0; i < starsCount; i++) {
-            const radius = Math.random() * 50 + 20; // Increased radius
+            const radius = Math.random() * 50 + 20;
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.random() * Math.PI;
 
@@ -198,7 +249,7 @@ function Stars() {
             <PointMaterial
                 transparent
                 vertexColors
-                size={0.5} // Increased size
+                size={0.5}
                 sizeAttenuation={true}
                 depthWrite={false}
                 blending={THREE.AdditiveBlending}
@@ -220,7 +271,6 @@ function Moon({ scrollProgress }: { scrollProgress: number }) {
     const moonTexture = useTexture('assets/foto/moon-texture.jpg', (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.anisotropy = 16;
-        // Tambahkan mapping untuk memastikan tekstur memenuhi sphere
         texture.mapping = THREE.EquirectangularReflectionMapping;
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
@@ -255,14 +305,12 @@ function Moon({ scrollProgress }: { scrollProgress: number }) {
             roughness={0.7}
             emissive="#4a6ea5"
             emissiveIntensity={0.15}
-            // Tambahkan properti untuk mapping tekstur yang lebih baik
             side={THREE.FrontSide}
         />
     );
 
     return (
         <animated.group ref={moonRef} scale={scale} position={[2, 2, -3]}>
-            {/* Glow effect */}
             <mesh scale={8}>
                 <sphereGeometry args={[1.2, 64, 64]} />
                 <meshBasicMaterial
@@ -273,7 +321,6 @@ function Moon({ scrollProgress }: { scrollProgress: number }) {
                 />
             </mesh>
 
-            {/* Main moon sphere */}
             <mesh castShadow receiveShadow scale={7}>
                 <sphereGeometry args={[1, 128, 128]} />
                 {material}
@@ -361,13 +408,11 @@ function useScrollVisibility(processId: string, portfolioId: string) {
                 const scrollY = window.scrollY;
                 const viewportHeight = window.innerHeight;
 
-                // Calculate fade ranges
                 const fadeInStart = processSectionTop - viewportHeight;
                 const fadeInEnd = processSectionTop;
                 const fadeOutStart = portfolioSectionTop;
                 const fadeOutEnd = portfolioSectionTop + viewportHeight;
 
-                // Calculate opacity
                 if (scrollY < fadeInStart) {
                     setOpacity(0);
                 } else if (scrollY < fadeInEnd) {
@@ -382,7 +427,6 @@ function useScrollVisibility(processId: string, portfolioId: string) {
                     setOpacity(1);
                 }
 
-                // Calculate animation progress
                 if (scrollY >= fadeInStart && scrollY <= fadeOutEnd) {
                     const startPoint = processSectionTop - viewportHeight;
                     const endPoint = portfolioSectionTop;
@@ -399,7 +443,7 @@ function useScrollVisibility(processId: string, portfolioId: string) {
         };
 
         window.addEventListener('scroll', handleScroll);
-        handleScroll(); // Initial check
+        handleScroll();
 
         return () => window.removeEventListener('scroll', handleScroll);
     }, [processId, portfolioId]);
@@ -411,20 +455,20 @@ export default function CodeAnimation() {
     const { scrollProgress } = useScrollVisibility('process-section', 'portfolio-section');
 
     return (
-        <div className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: -1 }}>
-            <Canvas camera={{ position: [0, 0, 15], fov: 60 }}> {/* Increased FOV */}
+        <div className="fixed inset-0 w-full h-full" style={{ zIndex: -1 }}>
+            <Canvas camera={{ position: [0, 0, 20], fov: 75 }}>
                 <color attach="background" args={['#000000']} />
-                <fog attach="fog" args={['#000000', 1, 70]} /> {/* Increased fog distance */}
+                <fog attach="fog" args={['#000000', 1, 80]} />
                 <ambientLight intensity={0.4} />
                 <pointLight position={[10, 10, 10]} intensity={0.8} />
                 <pointLight position={[-10, -10, -5]} intensity={0.4} color="#4a6ea5" />
                 <Stars />
                 <Moon scrollProgress={scrollProgress} />
                 <CodeParticles scrollProgress={scrollProgress} />
-                {Array.from({ length: 2 }).map((_, i) => (
+                {Array.from({ length: 5 }).map((_, i) => (
                     <ShootingStar key={i} />
                 ))}
-                {Array.from({ length: 2 }).map((_, i) => (
+                {Array.from({ length: 3 }).map((_, i) => (
                     <UFO key={i} />
                 ))}
             </Canvas>
