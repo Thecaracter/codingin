@@ -46,9 +46,17 @@ body {
 }
 
 @keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .animate-gradient {
@@ -60,6 +68,7 @@ body {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -69,6 +78,66 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.8s ease-out forwards;
 }
+
+/* DatePicker Custom Styling */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker {
+  @apply bg-black border border-gray-800 rounded-lg shadow-xl !important;
+}
+
+.react-datepicker__header {
+  @apply bg-gray-900/50 border-gray-800 !important;
+}
+
+.react-datepicker__current-month,
+.react-datepicker-time__header,
+.react-datepicker-year-header {
+  @apply text-white !important;
+}
+
+.react-datepicker__day-name {
+  @apply text-gray-400 !important;
+}
+
+.react-datepicker__day {
+  @apply text-white hover:bg-gray-800 transition-colors !important;
+}
+
+.react-datepicker__day--selected {
+  @apply bg-blue-500 hover:bg-blue-600 !important;
+}
+
+.react-datepicker__day--keyboard-selected {
+  @apply bg-blue-500/50 hover:bg-blue-600 !important;
+}
+
+.react-datepicker__day--disabled {
+  @apply text-gray-600 hover:bg-transparent cursor-not-allowed !important;
+}
+
+.react-datepicker__navigation-icon::before {
+  @apply border-gray-400 !important;
+}
+
+.react-datepicker__navigation:hover *::before {
+  @apply border-gray-200 !important;
+}
+
+.react-datepicker__day--today {
+  @apply text-blue-400 font-bold !important;
+}
+
+.react-datepicker__triangle {
+  @apply hidden !important;
+}
+
+.react-datepicker__input-container input {
+  @apply w-full bg-black/50 border border-gray-800 rounded-lg p-2 pr-10 text-sm text-white hover:border-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer !important;
+}
+
 
 @layer utilities {
   .text-balance {
