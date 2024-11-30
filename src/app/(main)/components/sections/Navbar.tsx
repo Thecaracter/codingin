@@ -80,6 +80,11 @@ export default function Navbar() {
                             <p className="text-sm text-white">{session.user?.name}</p>
                             <p className="text-xs text-gray-300 truncate">{session.user?.email}</p>
                         </div>
+                        <div className="px-4 py-3 border-b border-white/10">
+    <Link href="/pesanan">
+        Pesanan
+    </Link>
+</div>
                         <button
                             onClick={() => signOut()}
                             className="w-full px-4 py-2 text-sm text-white hover:bg-white/20 transition-colors 
