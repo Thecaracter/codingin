@@ -7,14 +7,14 @@ export default withAuth(
         const path = request.nextUrl.pathname
         const token = request.nextauth.token
 
-        // Protect dashboard routes
-        if (path.startsWith('/dashboard')) {
+
+        if (path.startsWith('/dashboard') || path.startsWith('/pesanan')) {
             if (!token) {
                 return NextResponse.redirect(new URL('/auth/login', request.url))
             }
         }
 
-        // Redirect if logged in
+
         if (path.startsWith('/auth') && token) {
             return NextResponse.redirect(new URL('/dashboard', request.url))
         }
@@ -29,5 +29,5 @@ export default withAuth(
 )
 
 export const config = {
-    matcher: ['/dashboard/:path*', '/auth/:path*']
+    matcher: ['/dashboard/:path*', '/auth/:path*', '/pesanan/:path*']
 }
