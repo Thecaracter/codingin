@@ -1,28 +1,22 @@
-import "./globals.css"
-import { Inter } from "next/font/google"
-import { Analytics } from '@vercel/analytics/react'
-import BackgroundWrapper from './components/BackgroundWrapper'
+// src/app/layout.tsx
+import './globals.css';
+import { Inter } from 'next/font/google';
+import AuthProvider from '@/components/providers/auth-provider';
 
-const inter = Inter({ subsets: ["latin"] })
-
-export const metadata = {
-  title: 'Codingin',
-  description: 'Professional Web Development Services',
-}
+const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased`}>
-        <BackgroundWrapper>
+      <body className={inter.className}>
+        <AuthProvider>
           {children}
-        </BackgroundWrapper>
-        <Analytics />
+        </AuthProvider>
       </body>
     </html>
-  )
+  );
 }

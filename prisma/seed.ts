@@ -1,16 +1,21 @@
 const { PrismaClient } = require('@prisma/client')
-const bcrypt = require('bcrypt')
 
 const prismadb = new PrismaClient()
 
 async function main() {
-    const hashedPassword = await bcrypt.hash('password', 10)
-
-    await prismadb.admin.create({
+    await prismadb.user.create({
         data: {
             email: 'admin@gmail.com',
-            password: hashedPassword,
-            name: 'Admin'
+            name: 'Admin',
+            role: 'ADMIN',
+            image: 'https://picsum.photos/200/200',
+            accounts: {
+                create: {
+                    type: "oauth",
+                    provider: "google",
+                    providerAccountId: "default_admin_id",
+                }
+            }
         }
     })
 
@@ -91,5 +96,10 @@ async function main() {
 }
 
 main()
-    .catch(e => console.error(e))
-    .finally(async () => await prismadb.$disconnect())
+    .catch(e => {
+        console.error('Error seeding database:', e)
+        process.exit(1)
+    })
+    .finally(async () => {
+        await prismadb.$disconnect()
+    })

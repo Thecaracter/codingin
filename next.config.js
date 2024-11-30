@@ -4,4 +4,4 @@ const nextConfig = {
         domains: ['picsum.photos']
     }
 }
-module.exports = nextConfig
+module.exports = nextConfig 

@@ -14,10 +14,9 @@ body {
       transparent,
       rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
   overflow-x: hidden;
-  /* Prevent horizontal overflow */
 }
 
-/* Modern Scrollbar Styling */
+/* Scrollbar Styling */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
@@ -41,93 +40,26 @@ body {
   background-color: rgba(255, 255, 255, 0.3);
 }
 
-/* Gradient Animation */
+/* Animations */
 .bg-300 {
   background-size: 300% 300%;
 }
 
 @keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .animate-gradient {
   animation: gradient 6s ease infinite;
 }
 
-/* Matrix Rain Effect - Updated */
-.matrix-rain {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  /* Changed from 200% to 100% */
-  background: linear-gradient(180deg,
-      rgba(0, 255, 255, 0.1) 0%,
-      rgba(0, 255, 150, 0.05) 50%,
-      transparent 100%);
-  background-size: 100% 100%;
-  pointer-events: none;
-  /* Ensure it doesn't interfere with clicks */
-  overflow: hidden;
-  /* Contain the animation */
-}
-
-@keyframes matrix-rain {
-  0% {
-    opacity: 0;
-    transform: translateY(-20%);
-  }
-
-  20% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(100%);
-  }
-}
-
-/* Grid Pattern - Updated */
-.bg-grid-pattern {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 30px 30px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-@keyframes grid-move {
-  0% {
-    transform: translateY(0);
-  }
-
-  100% {
-    transform: translateY(30px);
-  }
-}
-
-/* Fade In Animation */
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -138,32 +70,6 @@ body {
   animation: fadeIn 0.8s ease-out forwards;
 }
 
-/* Hide Scrollbar */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Container for Three.js canvas - New */
-.three-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 10;
-}
-
-/* Section wrapper - New */
-.section-wrapper {
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-}
-
-/* Utilities */
 @layer utilities {
   .text-balance {
     text-wrap: balance;

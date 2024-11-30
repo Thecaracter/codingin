@@ -1,0 +1,121 @@
+.landing-container {
+    color: rgb(var(--foreground-rgb));
+    background: linear-gradient(to bottom,
+        transparent,
+        rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+  
+  /* Matrix Rain Effect */
+  .matrix-rain {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg,
+        rgba(0, 255, 255, 0.1) 0%,
+        rgba(0, 255, 150, 0.05) 50%,
+        transparent 100%);
+    background-size: 100% 100%;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  
+  @keyframes matrix-rain {
+    0% {
+      opacity: 0;
+      transform: translateY(-20%);
+    }
+    20% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+  }
+  
+  /* Grid Pattern */
+  .bg-grid-pattern {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  @keyframes grid-move {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(30px);
+    }
+  }
+  
+  /* Gradient Animations */
+  .bg-300 {
+    background-size: 300% 300%;
+  }
+  
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  
+  .animate-gradient {
+    animation: gradient 6s ease infinite;
+  }
+  
+  /* Fade In Animation */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+  }
+  
+  /* Three.js Container */
+  .three-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+  
+  /* Section Wrapper */
+  .section-wrapper {
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+  }
+  
+  /* Scrollbar Hide Utility */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
