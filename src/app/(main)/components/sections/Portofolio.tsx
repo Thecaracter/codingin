@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion, useMotionValue } from 'framer-motion';
+import Image from 'next/image';
 
 interface Portfolio {
     id: number;
@@ -15,8 +16,20 @@ export default function Portfolio() {
     const [projects, setProjects] = useState<Portfolio[]>([]);
     const [row1, setRow1] = useState<Portfolio[]>([]);
     const [row2, setRow2] = useState<Portfolio[]>([]);
+    const [windowWidth, setWindowWidth] = useState(0);
     const x1 = useMotionValue(0);
     const x2 = useMotionValue(0);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
+
+        handleResize();
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         fetch('/api/portofolio')
@@ -25,72 +38,94 @@ export default function Portfolio() {
                 const portfolioData = Array.isArray(data) ? data : data.data || [];
                 setProjects(portfolioData);
 
-                // Membagi data menjadi 2 baris
-                const midPoint = Math.ceil(portfolioData.length / 2);
-                setRow1(portfolioData.slice(0, midPoint));
-                setRow2(portfolioData.slice(midPoint));
+                if (windowWidth < 768) {
+                    setRow1(portfolioData);
+                    setRow2([]);
+                } else {
+                    const midPoint = Math.ceil(portfolioData.length / 2);
+                    setRow1(portfolioData.slice(0, midPoint));
+                    setRow2(portfolioData.slice(midPoint));
+                }
             })
             .catch(err => {
                 console.error('Error:', err);
                 setProjects([]);
             });
-    }, []);
+    }, [windowWidth]);
 
     if (!projects.length) {
         return (
-            <section className="min-h-screen py-20 px-4 relative overflow-hidden">
+            <section className="min-h-screen py-20 px-4 relative overflow-hidden bg-black">
                 <div className="max-w-7xl mx-auto relative z-10">
-                    <h2 className="text-3xl font-bold text-center mb-12 text-white">Recent Projects</h2>
-                    <div className="text-center text-white">Loading...</div>
+                    <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-[#4461F2] to-[#7C3AED] inline-block text-transparent bg-clip-text">Recent Projects</h2>
+                    <div className="text-center text-[#4461F2]">Loading...</div>
                 </div>
             </section>
         );
     }
 
-    return (
-        <section id="portfolio-section" className="min-h-screen py-20 relative overflow-hidden">
-            <div className="relative z-10">
-                <h2 className="text-3xl font-bold text-center mb-12 text-white">Recent Projects</h2>
+    const calculateConstraint = (items: Portfolio[]) => {
+        const cardWidth = 300;
+        const gap = 24;
+        const totalWidth = (items.length * cardWidth) + ((items.length - 1) * gap);
+        const viewportWidth = windowWidth || 1200;
+        const maxScroll = totalWidth - viewportWidth;
+        const screenCenter = (viewportWidth - cardWidth) / 2;
 
-                <div className="space-y-6 overflow-hidden">
-                    {/* Baris Pertama */}
-                    <div className="overflow-hidden px-4">
+        return {
+            left: -Math.min(totalWidth - cardWidth, maxScroll + screenCenter),
+            right: screenCenter
+        };
+    };
+
+    return (
+        <section className="min-h-screen py-10 md:py-20 relative overflow-hidden bg-black">
+            <div
+                className="absolute inset-0 bg-[url('/stars.png')] opacity-50"
+                style={{ backgroundSize: '200px 200px' }}
+            />
+            <div className="relative z-10 max-w-[1920px] mx-auto">
+                <h2 className="text-4xl md:text-5xl font-bold text-center mb-8 md:mb-12 bg-gradient-to-r from-[#4461F2] to-[#7C3AED] inline-block text-transparent bg-clip-text w-full">
+                    Recent Projects
+                </h2>
+
+                <div className="space-y-4 md:space-y-6 overflow-hidden">
+                    <div className="overflow-hidden px-2 md:px-4">
                         <motion.div
-                            className="flex gap-6 cursor-grab active:cursor-grabbing"
+                            className="flex gap-4 md:gap-6 pl-2 md:pl-4"
                             drag="x"
-                            dragConstraints={{
-                                left: -((row1.length * 320) - (typeof window !== 'undefined' ? window.innerWidth - 32 : 0)),
-                                right: 0
-                            }}
+                            dragConstraints={calculateConstraint(row1)}
                             style={{ x: x1 }}
+                            dragElastic={0.1}
+                            dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
                         >
                             {row1.map((project) => (
                                 <motion.div
                                     key={project.id}
-                                    className="min-w-[300px] rounded-lg overflow-hidden bg-gray-800/50 backdrop-blur-sm
-                                    border border-gray-700/50 hover:border-blue-500/50
-                                    transition-all duration-300 group flex-shrink-0"
-                                    whileHover={{ scale: 1.02 }}
+                                    className="w-[300px] rounded-xl overflow-hidden bg-[#15162c]/90 backdrop-blur-sm border border-[#4461F2]/30 hover:border-[#4461F2] transition-all duration-300 group flex-shrink-0 shadow-lg hover:shadow-[#4461F2]/20"
+                                    whileHover={{ scale: 1.02, y: -5 }}
                                 >
                                     <div className="relative h-40 overflow-hidden">
-                                        <img
+                                        <Image
                                             src={project.image}
                                             alt={project.nama}
+                                            width={300}
+                                            height={160}
                                             className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#15162c] via-[#15162c]/40 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
                                     </div>
-                                    <div className="p-4">
-                                        <h3 className="text-lg font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors">
+                                    <div className="p-5">
+                                        <h3 className="text-lg font-bold mb-2 text-[#4461F2] group-hover:text-[#7C3AED] transition-colors">
                                             {project.nama}
                                         </h3>
-                                        <p className="text-gray-400 mb-3 text-sm">{project.deskripsi}</p>
+                                        <p className="text-gray-400 mb-4 text-sm line-clamp-2 group-hover:text-gray-300 transition-colors">
+                                            {project.deskripsi}
+                                        </p>
                                         <div className="flex flex-wrap gap-2">
                                             {project.techStack.map((tech) => (
                                                 <span key={tech}
-                                                    className="px-2 py-1 bg-gray-700/50 rounded-full text-xs text-gray-300
-                                                    backdrop-blur-sm border border-gray-600/50 hover:border-blue-500/50
-                                                    transition-colors duration-300"
+                                                    className="px-3 py-1 bg-[#4461F2]/10 rounded-full text-xs text-[#4461F2] border border-[#4461F2]/30 hover:border-[#7C3AED] hover:text-[#7C3AED] hover:bg-[#7C3AED]/10 transition-all duration-300"
                                                 >
                                                     {tech}
                                                 </span>
@@ -102,54 +137,54 @@ export default function Portfolio() {
                         </motion.div>
                     </div>
 
-                    {/* Baris Kedua */}
-                    <div className="overflow-hidden px-4">
-                        <motion.div
-                            className="flex gap-6 cursor-grab active:cursor-grabbing"
-                            drag="x"
-                            dragConstraints={{
-                                left: -((row2.length * 320) - (typeof window !== 'undefined' ? window.innerWidth - 32 : 0)),
-                                right: 0
-                            }}
-                            style={{ x: x2 }}
-                        >
-                            {row2.map((project) => (
-                                <motion.div
-                                    key={project.id}
-                                    className="min-w-[300px] rounded-lg overflow-hidden bg-gray-800/50 backdrop-blur-sm
-                                    border border-gray-700/50 hover:border-blue-500/50
-                                    transition-all duration-300 group flex-shrink-0"
-                                    whileHover={{ scale: 1.02 }}
-                                >
-                                    <div className="relative h-40 overflow-hidden">
-                                        <img
-                                            src={project.image}
-                                            alt={project.nama}
-                                            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent" />
-                                    </div>
-                                    <div className="p-4">
-                                        <h3 className="text-lg font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors">
-                                            {project.nama}
-                                        </h3>
-                                        <p className="text-gray-400 mb-3 text-sm">{project.deskripsi}</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {project.techStack.map((tech) => (
-                                                <span key={tech}
-                                                    className="px-2 py-1 bg-gray-700/50 rounded-full text-xs text-gray-300
-                                                    backdrop-blur-sm border border-gray-600/50 hover:border-blue-500/50
-                                                    transition-colors duration-300"
-                                                >
-                                                    {tech}
-                                                </span>
-                                            ))}
+                    {row2.length > 0 && (
+                        <div className="overflow-hidden px-2 md:px-4">
+                            <motion.div
+                                className="flex gap-4 md:gap-6 pl-2 md:pl-4"
+                                drag="x"
+                                dragConstraints={calculateConstraint(row2)}
+                                style={{ x: x2 }}
+                                dragElastic={0.1}
+                                dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+                            >
+                                {row2.map((project) => (
+                                    <motion.div
+                                        key={project.id}
+                                        className="w-[300px] rounded-xl overflow-hidden bg-[#15162c]/90 backdrop-blur-sm border border-[#4461F2]/30 hover:border-[#4461F2] transition-all duration-300 group flex-shrink-0 shadow-lg hover:shadow-[#4461F2]/20"
+                                        whileHover={{ scale: 1.02, y: -5 }}
+                                    >
+                                        <div className="relative h-40 overflow-hidden">
+                                            <Image
+                                                src={project.image}
+                                                alt={project.nama}
+                                                width={300}
+                                                height={160}
+                                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-[#15162c] via-[#15162c]/40 to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
                                         </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    </div>
+                                        <div className="p-5">
+                                            <h3 className="text-lg font-bold mb-2 text-[#4461F2] group-hover:text-[#7C3AED] transition-colors">
+                                                {project.nama}
+                                            </h3>
+                                            <p className="text-gray-400 mb-4 text-sm line-clamp-2 group-hover:text-gray-300 transition-colors">
+                                                {project.deskripsi}
+                                            </p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {project.techStack.map((tech) => (
+                                                    <span key={tech}
+                                                        className="px-3 py-1 bg-[#4461F2]/10 rounded-full text-xs text-[#4461F2] border border-[#4461F2]/30 hover:border-[#7C3AED] hover:text-[#7C3AED] hover:bg-[#7C3AED]/10 transition-all duration-300"
+                                                    >
+                                                        {tech}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </motion.div>
+                        </div>
+                    )}
                 </div>
             </div>
         </section>
