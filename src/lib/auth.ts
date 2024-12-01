@@ -49,7 +49,7 @@ export const authOptions: AuthOptions = {
                 });
 
                 if (dbUser) {
-                    session.user.id = dbUser.id.toString(); // Convert number to string
+                    session.user.id = dbUser.id.toString();
                     session.user.role = dbUser.role;
                 }
             }
@@ -63,7 +63,7 @@ export const authOptions: AuthOptions = {
                 });
 
                 if (dbUser) {
-                    token.id = dbUser.id.toString(); // Convert number to string
+                    token.id = dbUser.id.toString();
                     token.role = dbUser.role;
                 }
             }
