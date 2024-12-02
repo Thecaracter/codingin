@@ -1,14 +1,14 @@
-// src/app/pesanan/page.tsx
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { X as XIcon, Loader2, Plus, Calendar } from 'lucide-react';
+import { X as XIcon, Loader2, Plus, Calendar, Upload, CheckCircle2, AlertCircle } from 'lucide-react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { formatDistance } from 'date-fns';
 import { id } from 'date-fns/locale';
+import UploadBukti from './components/UploadBukti';
 
 interface Pesanan {
     id: number;
@@ -21,6 +21,8 @@ interface Pesanan {
     akunTiktok: string;
     status: 'PENDING' | 'PROSES' | 'SELESAI' | 'DITOLAK';
     createdAt: string;
+    buktiDP?: string;
+    buktiPelunasan?: string;
 }
 
 export default function PesananPage() {
@@ -30,6 +32,9 @@ export default function PesananPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [selectedPesanan, setSelectedPesanan] = useState<number | null>(null);
+    const [uploadType, setUploadType] = useState<'buktiDP' | 'buktiPelunasan' | null>(null);
 
     const [techInput, setTechInput] = useState('');
     const [featureInput, setFeatureInput] = useState('');
@@ -126,7 +131,7 @@ export default function PesananPage() {
                 },
                 body: JSON.stringify({
                     ...formData,
-                    deadline: formData.deadline.toISOString(), // Convert Date to ISO string
+                    deadline: formData.deadline.toISOString(),
                     teknologi: selectedTechs,
                     fitur: selectedFeatures,
                 }),
@@ -154,6 +159,12 @@ export default function PesananPage() {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleUploadClick = (pesananId: number, type: 'buktiDP' | 'buktiPelunasan') => {
+        setSelectedPesanan(pesananId);
+        setUploadType(type);
+        setIsUploadModalOpen(true);
     };
 
     if (status === 'loading' || isLoading) {
@@ -190,7 +201,42 @@ export default function PesananPage() {
                 </div>
             </div>
 
-            {/* Modal Form */}
+            {/* Upload Modal */}
+            {isUploadModalOpen && selectedPesanan && uploadType && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl w-full max-w-md">
+                        <div className="p-5 border-b border-gray-800 flex justify-between items-center">
+                            <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400">
+                                Upload Bukti {uploadType === 'buktiDP' ? 'DP' : 'Pelunasan'}
+                            </h2>
+                            <button
+                                onClick={() => setIsUploadModalOpen(false)}
+                                className="p-1 hover:bg-gray-800 rounded-lg transition-colors"
+                            >
+                                <XIcon size={20} />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <UploadBukti
+                                pesananId={selectedPesanan}
+                                jenisBukti={uploadType}
+                                onSuccess={() => {
+                                    setIsUploadModalOpen(false);
+                                    fetchPesanan();
+                                }}
+                            />
+                            <button
+                                onClick={() => setIsUploadModalOpen(false)}
+                                className="w-full mt-4 py-2 px-4 rounded-lg border border-gray-600 text-gray-300 hover:bg-gray-800 transition-colors"
+                            >
+                                Batal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Order Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-auto animate-in fade-in zoom-in duration-200">
@@ -436,7 +482,64 @@ export default function PesananPage() {
                                         </div>
                                     </div>
 
-                                    <div className="pt-4 border-t border-gray-800">
+                                    {/* Bukti Pembayaran Section */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-gray-800">
+                                        {/* Bukti DP */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-xs font-medium text-gray-400">Bukti DP</h4>
+                                                {p.status === 'PENDING' && !p.buktiDP && (
+                                                    <button
+                                                        onClick={() => handleUploadClick(p.id, 'buktiDP')}
+                                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 transition-colors text-xs font-medium"
+                                                    >
+                                                        <Upload size={14} />
+                                                        Upload DP
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {p.buktiDP ? (
+                                                <div className="flex items-center gap-2 text-green-400 text-sm">
+                                                    <CheckCircle2 size={16} />
+                                                    Bukti DP telah diupload
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 text-gray-500 text-sm">
+                                                    <AlertCircle size={16} />
+                                                    Belum ada bukti DP
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Bukti Pelunasan */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-xs font-medium text-gray-400">Bukti Pelunasan</h4>
+                                                {p.status === 'SELESAI' && p.buktiDP && !p.buktiPelunasan && (
+                                                    <button
+                                                        onClick={() => handleUploadClick(p.id, 'buktiPelunasan')}
+                                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 transition-colors text-xs font-medium"
+                                                    >
+                                                        <Upload size={14} />
+                                                        Upload Pelunasan
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {p.buktiPelunasan ? (
+                                                <div className="flex items-center gap-2 text-green-400 text-sm">
+                                                    <CheckCircle2 size={16} />
+                                                    Bukti pelunasan telah diupload
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2 text-gray-500 text-sm">
+                                                    <AlertCircle size={16} />
+                                                    Belum ada bukti pelunasan
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-gray-800 mt-6">
                                         <div className="flex flex-wrap justify-between gap-4 text-xs text-gray-400">
                                             <div className="flex items-center gap-2">
                                                 <span>Deadline:</span>
