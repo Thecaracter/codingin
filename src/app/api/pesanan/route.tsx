@@ -114,7 +114,7 @@ export async function PATCH(req: NextRequest) {
         }
 
         const body = await req.json();
-        console.log('Received request body:', body); // Debug log
+        console.log('Received request body:', body);
 
         const { pesananId, jenisBukti, bukti } = body;
 

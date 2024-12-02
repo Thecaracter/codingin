@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { X as XIcon, Loader2, Plus, Calendar, Upload, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X as XIcon, Loader2, Plus, Calendar, Upload, CheckCircle2, AlertCircle, Edit2, Image } from 'lucide-react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { formatDistance } from 'date-fns';
@@ -25,6 +25,69 @@ interface Pesanan {
     buktiPelunasan?: string;
 }
 
+const ImageModal = ({ imageUrl, onClose, onEdit, type }: {
+    imageUrl: string,
+    onClose: () => void,
+    onEdit: () => void,
+    type: 'buktiDP' | 'buktiPelunasan'
+}) => {
+    if (!imageUrl) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl w-full max-w-3xl">
+                <div className="p-4 border-b border-gray-800 flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-white">
+                        Bukti {type === 'buktiDP' ? 'DP' : 'Pelunasan'}
+                    </h3>
+                    <button
+                        onClick={onClose}
+                        className="p-1 hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                        <XIcon size={20} />
+                    </button>
+                </div>
+                <div className="p-4">
+                    <div className="relative aspect-video rounded-lg overflow-hidden bg-black/50">
+                        <img
+                            src={imageUrl}
+                            alt={`Bukti ${type === 'buktiDP' ? 'DP' : 'Pelunasan'}`}
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
+                    <div className="mt-4 flex justify-end gap-2">
+                        <button
+                            onClick={onEdit}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 transition-colors"
+                        >
+                            <Edit2 size={16} />
+                            Edit Bukti
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const TagDisplay = ({ items, baseColor }: { items: string[], baseColor: 'blue' | 'violet' }) => {
+    return (
+        <div className="flex flex-wrap gap-1.5">
+            {items.map((item, index) => (
+                <span
+                    key={index}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${baseColor === 'blue'
+                        ? 'bg-blue-500/10 text-blue-300 border border-blue-500/20'
+                        : 'bg-violet-500/10 text-violet-300 border border-violet-500/20'
+                        } transition-all duration-300 hover:scale-105`}
+                >
+                    {item}
+                </span>
+            ))}
+        </div>
+    );
+};
+
 export default function PesananPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
@@ -35,6 +98,8 @@ export default function PesananPage() {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [selectedPesanan, setSelectedPesanan] = useState<number | null>(null);
     const [uploadType, setUploadType] = useState<'buktiDP' | 'buktiPelunasan' | null>(null);
+    const [viewImageUrl, setViewImageUrl] = useState<string | null>(null);
+    const [viewImageType, setViewImageType] = useState<'buktiDP' | 'buktiPelunasan' | null>(null);
 
     const [techInput, setTechInput] = useState('');
     const [featureInput, setFeatureInput] = useState('');
@@ -66,6 +131,11 @@ export default function PesananPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleViewImage = (url: string, type: 'buktiDP' | 'buktiPelunasan') => {
+        setViewImageUrl(url);
+        setViewImageType(type);
     };
 
     const handleAddTech = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -117,10 +187,27 @@ export default function PesananPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (selectedTechs.length === 0 || selectedFeatures.length === 0) {
+
+        // Parse input teknologi dan fitur yang sedang diketik
+        let teknologiArray = selectedTechs;
+        if (techInput.trim()) {
+            teknologiArray = [...selectedTechs, ...techInput.split(',').map(t => t.trim())];
+        }
+
+        let fiturArray = selectedFeatures;
+        if (featureInput.trim()) {
+            fiturArray = [...selectedFeatures, ...featureInput.split(',').map(f => f.trim())];
+        }
+
+        // Validasi array tidak boleh kosong
+        if (teknologiArray.length === 0 || fiturArray.length === 0) {
             alert('Teknologi dan Fitur tidak boleh kosong');
             return;
         }
+
+        // Hapus string kosong dari array
+        teknologiArray = teknologiArray.filter(tech => tech.trim() !== '');
+        fiturArray = fiturArray.filter(fitur => fitur.trim() !== '');
 
         setIsSubmitting(true);
         try {
@@ -132,12 +219,13 @@ export default function PesananPage() {
                 body: JSON.stringify({
                     ...formData,
                     deadline: formData.deadline.toISOString(),
-                    teknologi: selectedTechs,
-                    fitur: selectedFeatures,
+                    teknologi: teknologiArray,
+                    fitur: fiturArray,
                 }),
             });
 
             if (response.ok) {
+                // Reset semua form state ke default
                 setFormData({
                     nama: '',
                     namaAplikasi: '',
@@ -147,6 +235,8 @@ export default function PesananPage() {
                 });
                 setSelectedTechs([]);
                 setSelectedFeatures([]);
+                setTechInput('');
+                setFeatureInput('');
                 await fetchPesanan();
                 setIsModalOpen(false);
             } else {
@@ -167,6 +257,56 @@ export default function PesananPage() {
         setIsUploadModalOpen(true);
     };
 
+    const renderBuktiSection = (p: Pesanan, type: 'buktiDP' | 'buktiPelunasan') => {
+        const isDP = type === 'buktiDP';
+        const buktiUrl = isDP ? p.buktiDP : p.buktiPelunasan;
+        const canUpload = isDP
+            ? (p.status === 'PENDING' || p.status === 'PROSES') && !p.buktiDP
+            : (p.status === 'PROSES' || p.status === 'SELESAI') && p.buktiDP && !p.buktiPelunasan;
+
+        return (
+            <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-medium text-gray-400">
+                        Bukti {isDP ? 'DP' : 'Pelunasan'}
+                    </h4>
+                    {canUpload && (
+                        <button
+                            onClick={() => handleUploadClick(p.id, type)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${isDP
+                                ? 'bg-blue-500/10 text-blue-300 hover:bg-blue-500/20'
+                                : 'bg-violet-500/10 text-violet-300 hover:bg-violet-500/20'
+                                } transition-colors text-xs font-medium`}
+                        >
+                            <Upload size={14} />
+                            Upload {isDP ? 'DP' : 'Pelunasan'}
+                        </button>
+                    )}
+                </div>
+                {buktiUrl ? (
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-green-400 text-sm">
+                            <CheckCircle2 size={16} />
+                            Bukti telah diupload
+                        </div>
+                        <button
+                            onClick={() => handleViewImage(buktiUrl, type)}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors text-xs font-medium"
+                        >
+                            <Image size={14} />
+                            Lihat Bukti
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                        <AlertCircle size={16} />
+                        Belum ada bukti
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     if (status === 'loading' || isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-black">
@@ -177,7 +317,6 @@ export default function PesananPage() {
 
     return (
         <div className="min-h-screen bg-[#030712]">
-            {/* Header Section */}
             <div className="relative bg-gradient-to-b from-gray-900 to-[#030712] py-8 sm:py-12">
                 <div className="absolute inset-0 bg-[url('/grid.svg')] bg-top [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -201,7 +340,20 @@ export default function PesananPage() {
                 </div>
             </div>
 
-            {/* Upload Modal */}
+            {viewImageUrl && viewImageType && (
+                <ImageModal
+                    imageUrl={viewImageUrl}
+                    type={viewImageType}
+                    onClose={() => setViewImageUrl(null)}
+                    onEdit={() => {
+                        setViewImageUrl(null);
+                        if (selectedPesanan) {
+                            handleUploadClick(selectedPesanan, viewImageType);
+                        }
+                    }}
+                />
+            )}
+
             {isUploadModalOpen && selectedPesanan && uploadType && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl w-full max-w-md">
@@ -236,7 +388,6 @@ export default function PesananPage() {
                 </div>
             )}
 
-            {/* Create Order Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-auto animate-in fade-in zoom-in duration-200">
@@ -254,7 +405,6 @@ export default function PesananPage() {
 
                         <div className="p-5">
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                {/* Nama dan Nama Aplikasi */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-xs font-medium text-gray-300">Nama</label>
@@ -278,7 +428,6 @@ export default function PesananPage() {
                                     </div>
                                 </div>
 
-                                {/* Keperluan */}
                                 <div className="space-y-1">
                                     <label className="text-xs font-medium text-gray-300">Keperluan</label>
                                     <textarea
@@ -290,7 +439,6 @@ export default function PesananPage() {
                                     />
                                 </div>
 
-                                {/* Teknologi */}
                                 <div className="space-y-1">
                                     <label className="text-xs font-medium text-gray-300">Teknologi</label>
                                     <div className="flex flex-wrap gap-2 mb-2">
@@ -320,7 +468,6 @@ export default function PesananPage() {
                                     />
                                 </div>
 
-                                {/* Fitur */}
                                 <div className="space-y-1">
                                     <label className="text-xs font-medium text-gray-300">Fitur</label>
                                     <div className="flex flex-wrap gap-2 mb-2">
@@ -350,7 +497,6 @@ export default function PesananPage() {
                                     />
                                 </div>
 
-                                {/* Deadline dan Akun TikTok */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-xs font-medium text-gray-300">Deadline</label>
@@ -385,7 +531,6 @@ export default function PesananPage() {
                                     </div>
                                 </div>
 
-                                {/* Submit Button */}
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
@@ -406,7 +551,6 @@ export default function PesananPage() {
                 </div>
             )}
 
-            {/* Daftar Pesanan */}
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
                 <div className="space-y-6">
                     <div className="flex items-center justify-between">
@@ -456,87 +600,17 @@ export default function PesananPage() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
                                         <div>
                                             <h4 className="text-xs font-medium text-gray-400 mb-2">Teknologi</h4>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {p.teknologi.map((tech, i) => (
-                                                    <span
-                                                        key={i}
-                                                        className="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20"
-                                                    >
-                                                        {tech}
-                                                    </span>
-                                                ))}
-                                            </div>
+                                            <TagDisplay items={p.teknologi} baseColor="blue" />
                                         </div>
                                         <div>
                                             <h4 className="text-xs font-medium text-gray-400 mb-2">Fitur</h4>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {p.fitur.map((feature, i) => (
-                                                    <span
-                                                        key={i}
-                                                        className="px-2.5 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-300 border border-violet-500/20"
-                                                    >
-                                                        {feature}
-                                                    </span>
-                                                ))}
-                                            </div>
+                                            <TagDisplay items={p.fitur} baseColor="violet" />
                                         </div>
                                     </div>
 
-                                    {/* Bukti Pembayaran Section */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-gray-800">
-                                        {/* Bukti DP */}
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="text-xs font-medium text-gray-400">Bukti DP</h4>
-                                                {p.status === 'PENDING' && !p.buktiDP && (
-                                                    <button
-                                                        onClick={() => handleUploadClick(p.id, 'buktiDP')}
-                                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 transition-colors text-xs font-medium"
-                                                    >
-                                                        <Upload size={14} />
-                                                        Upload DP
-                                                    </button>
-                                                )}
-                                            </div>
-                                            {p.buktiDP ? (
-                                                <div className="flex items-center gap-2 text-green-400 text-sm">
-                                                    <CheckCircle2 size={16} />
-                                                    Bukti DP telah diupload
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 text-gray-500 text-sm">
-                                                    <AlertCircle size={16} />
-                                                    Belum ada bukti DP
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Bukti Pelunasan */}
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="text-xs font-medium text-gray-400">Bukti Pelunasan</h4>
-                                                {p.status === 'SELESAI' && p.buktiDP && !p.buktiPelunasan && (
-                                                    <button
-                                                        onClick={() => handleUploadClick(p.id, 'buktiPelunasan')}
-                                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 transition-colors text-xs font-medium"
-                                                    >
-                                                        <Upload size={14} />
-                                                        Upload Pelunasan
-                                                    </button>
-                                                )}
-                                            </div>
-                                            {p.buktiPelunasan ? (
-                                                <div className="flex items-center gap-2 text-green-400 text-sm">
-                                                    <CheckCircle2 size={16} />
-                                                    Bukti pelunasan telah diupload
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center gap-2 text-gray-500 text-sm">
-                                                    <AlertCircle size={16} />
-                                                    Belum ada bukti pelunasan
-                                                </div>
-                                            )}
-                                        </div>
+                                        {renderBuktiSection(p, 'buktiDP')}
+                                        {renderBuktiSection(p, 'buktiPelunasan')}
                                     </div>
 
                                     <div className="pt-4 border-t border-gray-800 mt-6">
