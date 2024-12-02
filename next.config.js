@@ -2,6 +2,10 @@
 const nextConfig = {
     images: {
         domains: ['picsum.photos']
+    },
+    feedback: {
+        feedbackButton: false
     }
 }
-module.exports = nextConfig 
+
+module.exports = nextConfig

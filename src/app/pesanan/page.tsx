@@ -225,7 +225,6 @@ export default function PesananPage() {
             });
 
             if (response.ok) {
-                // Reset semua form state ke default
                 setFormData({
                     nama: '',
                     namaAplikasi: '',
