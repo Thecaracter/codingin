@@ -3,9 +3,7 @@ const nextConfig = {
     images: {
         domains: ['picsum.photos']
     },
-    feedback: {
-        feedbackButton: false
-    }
+    vercelToolbar: false
 }
 
 module.exports = nextConfig
