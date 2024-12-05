@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]/auth";
 import prisma from "@/lib/prisma";
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || '';
+// Gunakan langsung NEXTAUTH_SECRET
+const SECRET = process.env.NEXTAUTH_SECRET || '';
 
 export async function POST(req: NextRequest) {
     try {
@@ -32,7 +31,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Generate mobile token
+        // Generate mobile token dengan NEXTAUTH_SECRET
         const mobileToken = jwt.sign(
             {
                 userId: user.id,
@@ -40,7 +39,7 @@ export async function POST(req: NextRequest) {
                 role: user.role,
                 isMobile: true
             },
-            JWT_SECRET,
+            SECRET,
             { expiresIn: '30d' }
         );
 
@@ -67,7 +66,6 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// Endpoint untuk verifikasi token mobile
 export async function GET(req: NextRequest) {
     try {
         const authHeader = req.headers.get('authorization');
@@ -80,7 +78,7 @@ export async function GET(req: NextRequest) {
 
         const token = authHeader.split(' ')[1];
         try {
-            const decoded = jwt.verify(token, JWT_SECRET) as {
+            const decoded = jwt.verify(token, SECRET) as {
                 userId: number;
                 email: string;
                 role: string;
