@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 
 const SECRET = process.env.NEXTAUTH_SECRET || '';
 
-
 async function verifyToken(authHeader: string | null) {
     if (!authHeader?.startsWith('Bearer ')) {
         throw new Error('Token tidak valid');
