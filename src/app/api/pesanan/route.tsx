@@ -1,9 +1,9 @@
-// src/app/api/pesanan/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]/auth";
 import { v2 as cloudinary } from 'cloudinary';
+import { kirimNotifikasiKeAdmin } from '@/lib/firebase-admin';
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -69,6 +69,17 @@ export async function POST(req: NextRequest) {
             }
         });
 
+        // Kirim notifikasi ke admin untuk pesanan baru
+        await kirimNotifikasiKeAdmin(
+            pesanan,
+            "Pesanan Baru",
+            `${nama} membuat pesanan baru untuk aplikasi ${namaAplikasi}`,
+            {
+                type: 'NEW_ORDER',
+                orderId: pesanan.id.toString()
+            }
+        );
+
         return NextResponse.json(pesanan);
     } catch (error) {
         console.error("Error in POST /api/pesanan:", error);
@@ -85,12 +96,34 @@ export async function GET(req: NextRequest) {
                 { status: 401 }
             );
         }
+
+        const searchParams = new URL(req.url).searchParams;
+        const role = searchParams.get('role');
+
         const user = await prisma.user.findUnique({
             where: { email: session.user.email },
         });
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
+
+        // Jika user adalah admin dan request untuk melihat semua pesanan
+        if (role === 'admin' && user.role === 'ADMIN') {
+            const pesanan = await prisma.pesanan.findMany({
+                include: {
+                    user: {
+                        select: {
+                            name: true,
+                            email: true
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' }
+            });
+            return NextResponse.json(pesanan);
+        }
+
+        // Jika user biasa, hanya tampilkan pesanan mereka
         const pesanan = await prisma.pesanan.findMany({
             where: { userId: user.id },
             orderBy: { createdAt: 'desc' }
@@ -116,8 +149,42 @@ export async function PATCH(req: NextRequest) {
         const body = await req.json();
         console.log('Received request body:', body);
 
-        const { pesananId, jenisBukti, bukti } = body;
+        const { pesananId, status, jenisBukti, bukti } = body;
 
+        // Cek jika ini adalah update status dari admin
+        if (status) {
+            const user = await prisma.user.findUnique({
+                where: { email: session.user.email },
+            });
+
+            if (!user || user.role !== 'ADMIN') {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+            }
+
+            const updatedPesanan = await prisma.pesanan.update({
+                where: { id: parseInt(pesananId.toString()) },
+                data: { status }
+            });
+
+            // Kirim notifikasi untuk perubahan status
+            await kirimNotifikasiKeAdmin(
+                updatedPesanan,
+                "Status Pesanan Diubah",
+                `Status pesanan ${updatedPesanan.namaAplikasi} diubah menjadi ${status}`,
+                {
+                    type: 'STATUS_CHANGE',
+                    orderId: pesananId.toString(),
+                    status: status
+                }
+            );
+
+            return NextResponse.json({
+                message: 'Status pesanan berhasil diupdate',
+                data: updatedPesanan
+            });
+        }
+
+        // Proses upload bukti pembayaran
         if (!pesananId || !jenisBukti || !bukti) {
             return NextResponse.json(
                 { error: 'Data tidak lengkap' },
@@ -167,20 +234,16 @@ export async function PATCH(req: NextRequest) {
             }
         }
 
-        console.log('Uploading to Cloudinary...'); // Debug log
         const buktiUrl = await uploadToCloudinary(
             bukti,
             jenisBukti === 'buktiDP' ? 'dp' : 'pelunasan'
         );
 
-        console.log('Upload successful, updating database...'); // Debug log
-
-        // Update pesanan dengan bukti dan status baru jika perlu
+        // Update pesanan dengan bukti dan status baru
         const updateData: any = {
             [jenisBukti]: buktiUrl
         };
 
-        // Update status ke PROSES jika yang diupload adalah buktiDP
         if (jenisBukti === 'buktiDP') {
             updateData.status = 'PROSES';
         }
@@ -190,7 +253,18 @@ export async function PATCH(req: NextRequest) {
             data: updateData
         });
 
-        console.log('Database updated successfully'); 
+        // Kirim notifikasi untuk upload bukti pembayaran
+        await kirimNotifikasiKeAdmin(
+            updatedPesanan,
+            jenisBukti === 'buktiDP' ? "Bukti DP Diterima" : "Bukti Pelunasan Diterima",
+            `${user.name} telah mengupload ${jenisBukti === 'buktiDP' ? 'bukti DP' : 'bukti pelunasan'} untuk pesanan ${updatedPesanan.namaAplikasi}`,
+            {
+                type: 'PAYMENT_PROOF',
+                orderId: pesananId.toString(),
+                jenisBukti: jenisBukti,
+                status: updatedPesanan.status
+            }
+        );
 
         return NextResponse.json({
             message: `Berhasil mengupload ${jenisBukti === 'buktiDP' ? 'bukti DP' : 'bukti pelunasan'}`,

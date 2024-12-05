@@ -13,8 +13,9 @@ model User {
   name      String
   image     String?
   role      Role      @default(USER)
+  fcmToken  String?
   accounts  Account[]
-  pesanan   Pesanan[] // Relasi ke pesanan
+  pesanan   Pesanan[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -40,8 +41,8 @@ model Account {
 
 model Pesanan {
   id             Int      @id @default(autoincrement())
-  userId         Int // Foreign key untuk User
-  user           User     @relation(fields: [userId], references: [id]) // Relasi ke User
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
   nama           String
   namaAplikasi   String
   keperluan      String
