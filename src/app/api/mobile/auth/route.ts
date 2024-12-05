@@ -41,43 +41,9 @@ async function verifyToken(authHeader: string | null) {
     return { decoded, user };
 }
 
+// Login endpoint
 export async function POST(req: NextRequest) {
     try {
-        // Cek path untuk membedakan login dan fcm update
-        const url = new URL(req.url);
-        const isFcmUpdate = url.pathname.endsWith('/fcm');
-
-        if (isFcmUpdate) {
-            const { decoded, user } = await verifyToken(req.headers.get('authorization'));
-            const { fcmToken } = await req.json();
-
-            if (!fcmToken) {
-                return NextResponse.json(
-                    { error: 'FCM Token diperlukan' },
-                    { status: 400 }
-                );
-            }
-
-            const updatedUser = await prisma.user.update({
-                where: { id: decoded.userId },
-                data: { fcmToken },
-                select: {
-                    id: true,
-                    email: true,
-                    name: true,
-                    role: true,
-                    image: true,
-                    fcmToken: true
-                }
-            });
-
-            return NextResponse.json({
-                message: 'FCM Token berhasil diupdate',
-                data: { user: updatedUser }
-            });
-        }
-
-        // Handle login
         const { email } = await req.json();
 
         if (!email) {
@@ -130,11 +96,12 @@ export async function POST(req: NextRequest) {
         console.error("Error:", error);
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Internal server error' },
-            { status: error instanceof Error && error.message === 'Token tidak valid' ? 401 : 500 }
+            { status: 500 }
         );
     }
 }
 
+// Validasi token endpoint
 export async function GET(req: NextRequest) {
     try {
         const { user } = await verifyToken(req.headers.get('authorization'));
@@ -142,28 +109,6 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             message: 'Token valid',
             data: { user }
-        });
-
-    } catch (error) {
-        console.error("Error:", error);
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Internal server error' },
-            { status: error instanceof Error && error.message === 'Token tidak valid' ? 401 : 500 }
-        );
-    }
-}
-
-export async function DELETE(req: NextRequest) {
-    try {
-        const { decoded } = await verifyToken(req.headers.get('authorization'));
-
-        await prisma.user.update({
-            where: { id: decoded.userId },
-            data: { fcmToken: null }
-        });
-
-        return NextResponse.json({
-            message: 'FCM Token berhasil dihapus'
         });
 
     } catch (error) {
