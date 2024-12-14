@@ -1,4 +1,5 @@
-import { withAuth, type NextAuthMiddlewareOptions } from "next-auth/middleware"
+// middleware.ts
+import { withAuth } from "next-auth/middleware"
 import { NextResponse } from 'next/server'
 import type { NextRequestWithAuth } from 'next-auth/middleware'
 import jwt from 'jsonwebtoken'
@@ -64,7 +65,7 @@ export default withAuth(
         callbacks: {
             authorized: ({ token }) => !!token
         }
-    } as NextAuthMiddlewareOptions
+    }
 )
 
 export const config = {
