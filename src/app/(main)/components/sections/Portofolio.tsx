@@ -69,12 +69,14 @@ export default function Portfolio() {
         const gap = 24;
         const totalWidth = (items.length * cardWidth) + ((items.length - 1) * gap);
         const viewportWidth = windowWidth || 1200;
-        const maxScroll = totalWidth - viewportWidth;
-        const screenCenter = (viewportWidth - cardWidth) / 2;
+
+        // Hitung ruang tersisa di kanan dan kiri
+        const remainingSpace = Math.max(0, viewportWidth - totalWidth);
+        const initialOffset = remainingSpace / 2;
 
         return {
-            left: -Math.min(totalWidth - cardWidth, maxScroll + screenCenter),
-            right: screenCenter
+            left: initialOffset - totalWidth + cardWidth,
+            right: initialOffset
         };
     };
 
@@ -84,15 +86,15 @@ export default function Portfolio() {
                 className="absolute inset-0 bg-[url('/stars.png')] opacity-50"
                 style={{ backgroundSize: '200px 200px' }}
             />
-            <div className="relative z-10 max-w-[1920px] mx-auto">
+            <div className="relative z-10 max-w-[1920px] mx-auto px-4 md:px-8">
                 <h2 className="text-4xl md:text-5xl font-bold text-center mb-8 md:mb-12 bg-gradient-to-r from-[#4461F2] to-[#7C3AED] inline-block text-transparent bg-clip-text w-full">
                     Recent Projects
                 </h2>
 
                 <div className="space-y-4 md:space-y-6 overflow-hidden">
-                    <div className="overflow-hidden px-2 md:px-4">
+                    <div className="overflow-hidden">
                         <motion.div
-                            className="flex gap-4 md:gap-6 pl-2 md:pl-4"
+                            className="flex gap-4 md:gap-6 mx-auto"
                             drag="x"
                             dragConstraints={calculateConstraint(row1)}
                             style={{ x: x1 }}
@@ -138,9 +140,9 @@ export default function Portfolio() {
                     </div>
 
                     {row2.length > 0 && (
-                        <div className="overflow-hidden px-2 md:px-4">
+                        <div className="overflow-hidden">
                             <motion.div
-                                className="flex gap-4 md:gap-6 pl-2 md:pl-4"
+                                className="flex gap-4 md:gap-6 mx-auto"
                                 drag="x"
                                 dragConstraints={calculateConstraint(row2)}
                                 style={{ x: x2 }}
