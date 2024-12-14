@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/auth";
 import { v2 as cloudinary } from "cloudinary";
+import jwt from 'jsonwebtoken';
 
-// Konfigurasi Cloudinary
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Fungsi untuk upload ke Cloudinary
 async function uploadToCloudinary(base64File: string) {
     try {
         const result = await cloudinary.uploader.upload(base64File, {
@@ -25,16 +22,44 @@ async function uploadToCloudinary(base64File: string) {
     }
 }
 
-// Fungsi untuk delete dari Cloudinary
 async function deleteFromCloudinary(imageUrl: string) {
     try {
-        const publicId = imageUrl.split('/').pop()?.split('.')[0];
-        if (publicId) {
-            await cloudinary.uploader.destroy(`portfolio/${publicId}`);
-        }
+        const publicId = `portfolio/${imageUrl.split('/').pop()?.split('.')[0]}`;
+        await cloudinary.uploader.destroy(publicId);
     } catch (error) {
         console.error('Error deleting from Cloudinary:', error);
-        throw error;
+    }
+}
+
+async function verifyToken(req: NextRequest) {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+        return null;
+    }
+
+    try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(
+            token,
+            process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || ''
+        ) as {
+            userId: number;
+            email: string;
+            role: string;
+            isMobile: boolean;
+        };
+
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.userId }
+        });
+
+        if (!user || user.role !== 'ADMIN' || !decoded.isMobile) {
+            return null;
+        }
+
+        return user;
+    } catch {
+        return null;
     }
 }
 
@@ -57,8 +82,11 @@ export async function GET(
 
         return NextResponse.json(portfolio);
     } catch (error) {
-        console.error("Error in GET /api/mobile/portofolio/[id]:", error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        console.error("Error:", error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
     }
 }
 
@@ -68,29 +96,17 @@ export async function PUT(
     { params }: { params: { id: string } }
 ) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.email) {
+        const user = await verifyToken(req);
+        if (!user) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email: session.user.email },
-        });
-
-        if (!user || user.role !== 'ADMIN') {
-            return NextResponse.json(
-                { error: 'Only admin can manage portfolio' },
-                { status: 403 }
-            );
-        }
-
         const body = await req.json();
         const { nama, deskripsi, techStack, link, image } = body;
 
-        // Validasi input
         if (!nama || !deskripsi || !techStack || !link) {
             return NextResponse.json(
                 { error: 'Data tidak lengkap' },
@@ -131,8 +147,11 @@ export async function PUT(
             data: portfolio
         });
     } catch (error) {
-        console.error("Error in PUT /api/mobile/portofolio/[id]:", error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        console.error("Error:", error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
     }
 }
 
@@ -142,22 +161,11 @@ export async function DELETE(
     { params }: { params: { id: string } }
 ) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.email) {
+        const user = await verifyToken(req);
+        if (!user) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
-            );
-        }
-
-        const user = await prisma.user.findUnique({
-            where: { email: session.user.email },
-        });
-
-        if (!user || user.role !== 'ADMIN') {
-            return NextResponse.json(
-                { error: 'Only admin can manage portfolio' },
-                { status: 403 }
             );
         }
 
@@ -182,7 +190,22 @@ export async function DELETE(
             message: 'Portfolio berhasil dihapus'
         });
     } catch (error) {
-        console.error("Error in DELETE /api/mobile/portofolio/[id]:", error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        console.error("Error:", error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
     }
+}
+
+// OPTIONS - Handle CORS
+export async function OPTIONS(req: NextRequest) {
+    return new NextResponse(null, {
+        status: 204,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+    });
 }
