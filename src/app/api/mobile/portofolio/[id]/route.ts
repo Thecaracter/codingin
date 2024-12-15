@@ -31,6 +31,13 @@ async function deleteFromCloudinary(imageUrl: string) {
     }
 }
 
+interface DecodedToken {
+    userId: number;
+    email: string;
+    role: string;
+    isMobile: boolean;
+}
+
 async function verifyToken(req: NextRequest) {
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -42,12 +49,7 @@ async function verifyToken(req: NextRequest) {
         const decoded = jwt.verify(
             token,
             process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || ''
-        ) as {
-            userId: number;
-            email: string;
-            role: string;
-            isMobile: boolean;
-        };
+        ) as DecodedToken;
 
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId }
@@ -63,7 +65,6 @@ async function verifyToken(req: NextRequest) {
     }
 }
 
-// GET - Fetch single portfolio
 export async function GET(
     req: NextRequest,
     { params }: { params: { id: string } }
@@ -75,22 +76,24 @@ export async function GET(
 
         if (!portfolio) {
             return NextResponse.json(
-                { error: 'Portfolio tidak ditemukan' },
+                { success: false, error: 'Portfolio tidak ditemukan' },
                 { status: 404 }
             );
         }
 
-        return NextResponse.json(portfolio);
+        return NextResponse.json({
+            success: true,
+            data: portfolio
+        });
     } catch (error) {
         console.error("Error:", error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         );
     }
 }
 
-// PUT - Update portfolio
 export async function PUT(
     req: NextRequest,
     { params }: { params: { id: string } }
@@ -99,7 +102,7 @@ export async function PUT(
         const user = await verifyToken(req);
         if (!user) {
             return NextResponse.json(
-                { error: 'Unauthorized' },
+                { success: false, error: 'Unauthorized' },
                 { status: 401 }
             );
         }
@@ -109,7 +112,7 @@ export async function PUT(
 
         if (!nama || !deskripsi || !techStack || !link) {
             return NextResponse.json(
-                { error: 'Data tidak lengkap' },
+                { success: false, error: 'Data tidak lengkap' },
                 { status: 400 }
             );
         }
@@ -120,13 +123,13 @@ export async function PUT(
 
         if (!existingPortfolio) {
             return NextResponse.json(
-                { error: 'Portfolio tidak ditemukan' },
+                { success: false, error: 'Portfolio tidak ditemukan' },
                 { status: 404 }
             );
         }
 
         let imageUrl = existingPortfolio.image;
-        if (image) {
+        if (image && image !== existingPortfolio.image) {
             await deleteFromCloudinary(existingPortfolio.image);
             imageUrl = await uploadToCloudinary(image);
         }
@@ -136,26 +139,26 @@ export async function PUT(
             data: {
                 nama,
                 deskripsi,
-                techStack,
+                techStack: Array.isArray(techStack) ? techStack : techStack.split(',').map(tech => tech.trim()),
                 link,
                 image: imageUrl,
             }
         });
 
         return NextResponse.json({
+            success: true,
             message: 'Portfolio berhasil diupdate',
             data: portfolio
         });
     } catch (error) {
         console.error("Error:", error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         );
     }
 }
 
-// DELETE - Delete portfolio
 export async function DELETE(
     req: NextRequest,
     { params }: { params: { id: string } }
@@ -164,7 +167,7 @@ export async function DELETE(
         const user = await verifyToken(req);
         if (!user) {
             return NextResponse.json(
-                { error: 'Unauthorized' },
+                { success: false, error: 'Unauthorized' },
                 { status: 401 }
             );
         }
@@ -175,7 +178,7 @@ export async function DELETE(
 
         if (!portfolio) {
             return NextResponse.json(
-                { error: 'Portfolio tidak ditemukan' },
+                { success: false, error: 'Portfolio tidak ditemukan' },
                 { status: 404 }
             );
         }
@@ -187,18 +190,18 @@ export async function DELETE(
         });
 
         return NextResponse.json({
+            success: true,
             message: 'Portfolio berhasil dihapus'
         });
     } catch (error) {
         console.error("Error:", error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { success: false, error: 'Internal server error' },
             { status: 500 }
         );
     }
 }
 
-// OPTIONS - Handle CORS
 export async function OPTIONS(req: NextRequest) {
     return new NextResponse(null, {
         status: 204,

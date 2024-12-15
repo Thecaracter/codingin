@@ -73,6 +73,6 @@ export const config = {
         '/dashboard/:path*',
         '/auth/:path*',
         '/pesanan/:path*',
-        '/api/mobile/:path*'
+        // '/api/mobile/:path*'
     ]
 }
