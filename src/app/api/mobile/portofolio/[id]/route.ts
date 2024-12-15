@@ -139,7 +139,7 @@ export async function PUT(
             data: {
                 nama,
                 deskripsi,
-                techStack: Array.isArray(techStack) ? techStack : techStack.split(',').map(tech => tech.trim()),
+                techStack: Array.isArray(techStack) ? techStack : techStack.split(',').map((tech: string) => tech.trim()),
                 link,
                 image: imageUrl,
             }
